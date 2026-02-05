@@ -1,0 +1,18 @@
+# Streamlit für die Web-App
+streamlit>=1.30.0
+
+# PDF-Generierung über Pandoc
+pypandoc>=1.8.1
+
+# Optional, falls du LaTeX direkt aus Python kontrollieren willst
+# (meistens systemweit installiert)
+# latexmk oder xelatex müssen separat installiert sein
+
+# YAML & Utilities
+pyyaml>=6.0
+
+# Base64 encoding, tempfile, pathlib sind standard in Python >=3.8
+
+# Optional für bessere CLI-Erfahrung
+click>=8.1.7
+rich>=13.5.2
