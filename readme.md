@@ -14,7 +14,7 @@ Render it like print.
 
 You can access the live Streamlit application here:
 
-👉 [CV Builder Live](https://cv-builder.streamlit.app)
+👉 [CV Builder Live](https://build-your-cv.streamlit.app)
 
 ---
 
