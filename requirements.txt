@@ -1,5 +1,6 @@
 # Streamlit für die Web-App
 streamlit>=1.30.0
+streamlit-pdf>=0.1.0
 
 # PDF-Generierung über Pandoc
 pypandoc>=1.8.1
