@@ -262,6 +262,7 @@ python -m cli.main examples/my_cv.md -o output/my_cv.pdf --preview
 │ ├── columns.lua
 │ └── inline_dates.lua
 ├── templates/ # LaTeX templates
+│ └── harvard.tex
 │ └── modern.tex
 ├── examples/ # Default/example CVs
 │ └── default.md

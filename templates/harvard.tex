@@ -1,0 +1,162 @@
+\documentclass[10pt,a4paper]{article}
+
+% ==============================
+% Layout / Page Geometry
+% ==============================
+\usepackage[margin=1.5cm]{geometry}
+\pagestyle{empty}
+
+% ==============================
+% Fonts (XeLaTeX)
+% ==============================
+\usepackage{fontspec}
+\setmainfont{TeX Gyre Heros}
+
+% ==============================
+% Basic Packages
+% ==============================
+\usepackage[hidelinks]{hyperref} % clickable links, no colored boxes
+\usepackage{xcolor}             % colors
+\usepackage{titlesec}           % heading formatting
+\usepackage{tabularx}           % flexible tables
+\usepackage{enumitem}           % list spacing control
+\usepackage{setspace}           % line spacing control
+\usepackage{calc}               % for width calculations
+
+
+% ==============================
+% Colors
+% ==============================
+\definecolor{cvline}{HTML}{333333} % line color
+\definecolor{cvtext}{HTML}{333333} % main text color
+
+% ==============================
+% Paragraph formatting
+% ==============================
+\setlength{\parindent}{0pt} % no paragraph indentation
+\setlength{\parskip}{0.0em}
+\setstretch{1.1}              % single line spacing
+
+% ==============================
+% List styles
+% ==============================
+
+% Pandoc tightlist removal – allows \setlist settings to take effect
+\let\tightlist\relax
+
+\setlist[itemize]{
+  topsep=0.0em,
+  partopsep=0.0em,
+  itemsep=0.1em,
+  parsep=0em,
+  leftmargin=2em,
+  before=\vspace{0.5em},
+  after=\vspace{0.5em},
+  label={\large\textbullet}
+}
+
+% ==============================
+% Heading Styles
+% ==============================
+% H1 (#)
+\titleformat{\section}{\normalsize\bfseries\filcenter\color{cvtext}}{}{0pt}{}
+\titlespacing*{\section}{0pt}{1.5em}{0.2em}
+
+% H2 (##)
+\titleformat{\subsection}{\normalsize\bfseries\color{cvtext}}{}{0pt}{}
+\titlespacing*{\subsection}{0pt}{0.2em}{0.1em}
+
+% H3 (###)
+\titleformat{\subsubsection}{\normalsize\bfseries\color{cvtext}}{}{0pt}{}
+\titlespacing*{\subsubsection}{0pt}{0.2em}{0.1em}
+
+
+% ==============================
+% Custom Macro: Heading + Note
+% ==============================
+\newcommand{\HeadingWithNote}[3]{%
+  % #1 = Level (1,2,3)
+  % #2 = Heading text
+  % #3 = Note text (right-aligned, normal font)
+  \ifnum#1=1
+    \section*{#2 \normalfont \normalsize #3}
+  \else\ifnum#1=2
+    \subsection*{#2 \hfill \normalfont \normalsize #3}
+  \else\ifnum#1=3
+    \subsubsection*{#2 \hfill \normalfont \normalsize #3}
+  \fi\fi\fi
+}
+
+% ==============================
+% Custom Macro: Dynamic Contact Info with Separators
+% ==============================
+
+% Separator definition
+\newcommand{\sep}{~\textbullet~}
+
+% Setup for measuring text width
+\newlength{\currentlinewidth}
+\setlength{\currentlinewidth}{0pt}
+
+\newlength{\separatorwidth}
+\setlength{\separatorwidth}{\widthof{\sep}}
+
+\newlength{\itemwidth}
+
+% Setup counter for number of contact items added
+\newcounter{contactcount}
+
+% Macro to add a contact item with dynamic line breaking
+\newcommand{\contactitem}[2]{%
+  \setlength{\itemwidth}{\widthof{#1}}%
+  % Check if adding this item would exceed line width
+  \ifdim \dimexpr \currentlinewidth + \itemwidth + \separatorwidth > \linewidth
+    \\
+    \href{#2}{#1}%
+    \setlength{\currentlinewidth}{\widthof{#1}}%
+  % Else, add separator if not the first item
+  \else
+    \ifnum\value{contactcount}>0
+      \sep
+    \fi
+    \href{#2}{#1}%
+    \addtolength{\currentlinewidth}{\itemwidth}%
+  \fi
+  \stepcounter{contactcount}%
+}
+
+% Macro to reset line width and contact count (to be called at start)
+\newcommand{\startcontactlist}{%
+  \setlength{\currentlinewidth}{0pt}%
+  \setcounter{contactcount}{0}%
+}
+
+
+% ==============================
+% Document
+% ==============================
+\begin{document}
+\color{cvtext}
+
+% ==============================
+% Name centered, same size as text but bold
+% ==============================
+{\centering
+\normalsize\textbf{$name$}\\[-0.5em]
+\color{cvline}\rule{0.85\linewidth}{2.2pt}\\[0.3em]
+\startcontactlist
+\ifx\empty$address$\else\contactitem{$address$}{$address$}\fi%
+\ifx\empty$email$\else\contactitem{$email$}{mailto:$email$}\fi%
+\ifx\empty$phone$\else\contactitem{$phone$}{tel:$phone$}\fi%
+\ifx\empty$linkedin$\else\contactitem{$linkedin$}{$linkedin$}\fi%
+\ifx\empty$github$\else\contactitem{$github$}{$github$}\fi%
+\par
+}
+
+% ==============================
+% Main body rendered from Markdown
+% ==============================
+$body$
+
+\end{document}
+
