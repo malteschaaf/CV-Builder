@@ -65,7 +65,7 @@ def parse_args():
         "-t",
         "--template",
         type=Path,
-        default=Path("templates/template.tex"),
+        default=Path("templates/modern.tex"),
         help="LaTeX template to use",
     )
     parser.add_argument(

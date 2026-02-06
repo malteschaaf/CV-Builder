@@ -17,7 +17,7 @@ st.write(
 )
 
 # Paths to required files
-template_path = Path("templates/template.tex")
+template_path = Path("templates/modern.tex")
 inline_lua_filter_path = Path("filters/inline_dates.lua")
 columns_lua_filter_path = Path("filters/columns.lua")
 default_cv_path = Path("examples/default.md")
