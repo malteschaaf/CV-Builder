@@ -108,24 +108,71 @@ This will render as multiple columns without bullet points.
 
 ### Requirements
 
-- Python 3.9 or newer
-- Pandoc
-- XeLaTeX (TeX Live recommended)
+- Python **3.9+**
+- **Pandoc**
+- **XeLaTeX** (TeX Live recommended)
+- System font: **TeX Gyre Heros** (required for PDF generation)
 
-### Install Dependencies
 
-macOS:
+### Install System Dependencies
+
+#### macOS
 
 ```bash
 brew install pandoc
-brew install --cask mactex
+brew install --cask mactex-no-gui
 ```
 
-Ubuntu / Debian:
+> Note: `mactex-no-gui` is significantly smaller than the full MacTeX distribution and fully sufficient for XeLaTeX.
+
+Install the required fonts and make them available system-wide:
+
+```bash
+sudo tlmgr install tex-gyre
+sudo cp /usr/local/texlive/*/texmf-dist/fonts/opentype/public/tex-gyre/*.otf /Library/Fonts/
+fc-cache -fv
+```
+
+Verify installation:
+
+```bash
+fc-list | grep -i "TeX Gyre Heros"
+```
+
+
+#### Ubuntu / Debian
 
 ```bash
 sudo apt update
-sudo apt install pandoc texlive-xetex texlive-fonts-recommended
+sudo apt install pandoc texlive-xetex texlive-fonts-recommended fonts-texgyre
+```
+
+Verify installation:
+
+```bash
+fc-list | grep -i "TeX Gyre Heros"
+```
+
+
+#### Windows
+
+1. **Install Pandoc**  
+   https://pandoc.org/installing.html  
+   Ensure Pandoc is added to your `PATH` during installation.
+
+2. **Install TeX Live**  
+   https://www.tug.org/texlive/windows.html  
+   A **full installation** is recommended to avoid font-related issues.
+
+3. **Install TeX Gyre Fonts**
+   - Download: https://www.gust.org.pl/projects/e-foundry/tex-gyre
+   - Install all `.otf` files (Right-click → *Install*)
+
+4. **Verify installation (PowerShell)**
+
+```bash
+pandoc --version
+xelatex --version
 ```
 
 ---
@@ -135,8 +182,8 @@ sudo apt install pandoc texlive-xetex texlive-fonts-recommended
 Clone the repository:
 
 ```bash
-git clone https://github.com/malte.schaaf/cv-builder.git
-cd cv-builder
+git clone https://github.com/malteschaaf/CV-Builder.git
+cd CV-Builder
 ```
 
 Create a virtual environment:
@@ -165,6 +212,16 @@ Open your browser at:
 
 http://localhost:8501
 
+
+### PDF Generation Notes
+
+- PDF generation uses **Pandoc + XeLaTeX**
+- The default font is **TeX Gyre Heros**
+- If Pandoc fails with a font-related error:
+  - Ensure the font is installed system-wide
+  - Verify via `fc-list | grep Heros` (Windows: check installed fonts)
+- Fonts are **intentionally not committed** to the repository
+
 ---
 
 ## 📄 Using the CLI Tool
@@ -174,7 +231,7 @@ To convert your Markdown CV to a pdf locally you can as well use the CLI Tool
 ### Generate PDF from Markdown
 
 ```bash
-python -m cli.main generate examples/default.md -o output/cv.pdf
+python -m cli.main examples/default.md -o output/cv.pdf
 ```
 
 ### Options
