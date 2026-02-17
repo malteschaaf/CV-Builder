@@ -9,12 +9,9 @@ sys.path.append(str(Path(__file__).resolve().parent.parent))
 
 from utils.markdown_processor import convert_md_to_pdf, preprocess_markdown
 
-# Streamlit app setup
-st.set_page_config(page_title="CV Creator", layout="wide")
-st.title("📄 CV Creator (Markdown → PDF)")
-st.write(
-    "Upload or edit your Markdown CV and export a formatted PDF via Pandoc + LaTeX template."
-)
+# -----------------------------------------------------------------------------
+# Constants and Paths
+# -----------------------------------------------------------------------------
 
 # Paths to required files
 template_path = Path("templates/modern.tex")
@@ -22,7 +19,23 @@ inline_lua_filter_path = Path("filters/inline_dates.lua")
 columns_lua_filter_path = Path("filters/columns.lua")
 default_cv_path = Path("examples/default.md")
 
-# Check required files exist
+# -----------------------------------------------------------------------------
+# Streamlit App Setup
+# -----------------------------------------------------------------------------
+
+st.set_page_config(page_title="CV Creator", layout="wide")
+st.title("📄 CV Creator (Markdown → PDF)")
+st.caption(
+    "Upload or edit your Markdown CV and export a formatted PDF via Pandoc + LaTeX template."
+)
+st.divider()
+
+
+# -----------------------------------------------------------------------------
+# File Existence Check
+# -----------------------------------------------------------------------------
+
+# Ensure required files exist
 for path, desc in [
     (template_path, "LaTeX template"),
     (inline_lua_filter_path, "Inline lua filter"),
@@ -33,17 +46,21 @@ for path, desc in [
         st.error(f"{desc} not found at {path}.")
         st.stop()
 
-# Load default CV markdown from file
-default_md = default_cv_path.read_text(encoding="utf-8")
+# -----------------------------------------------------------------------------
+# Session State Initialization
+# -----------------------------------------------------------------------------
 
-# Use session state so uploads + edits behave correctly
 if "md_text" not in st.session_state:
-    st.session_state.md_text = default_md
+    st.session_state.md_text = default_cv_path.read_text(encoding="utf-8")
 
-col1, col2 = st.columns([1, 1])
+# -----------------------------------------------------------------------------
+# Markdown Editor and PDF Preview
+# -----------------------------------------------------------------------------
+
+editor_col, preview_col = st.columns([1, 1], gap="medium")
 
 # Left column: Markdown editor
-with col1:
+with editor_col:
     st.subheader("1) Edit CV Markdown")
     st.caption(
         "Edit your CV in Markdown. Use headings (#, ##, ###) for structure and '-' for bullet points. "
@@ -81,7 +98,7 @@ with col1:
         )
 
 # Right column: PDF export
-with col2:
+with preview_col:
     st.subheader("2) Export PDF")
 
     if st.button("🚀 Generate PDF", type="primary", use_container_width=True):
