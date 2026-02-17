@@ -53,6 +53,50 @@ for path, desc in [
 if "md_text" not in st.session_state:
     st.session_state.md_text = default_cv_path.read_text(encoding="utf-8")
 
+if "pdf_generated" not in st.session_state:
+    st.session_state.pdf_generated = False
+    st.session_state.pdf_bytes = None
+
+
+# -----------------------------------------------------------------------------
+# Utility Functions
+# -----------------------------------------------------------------------------
+def generate_pdf(
+    md_text, columns_lua_filter_path, inline_lua_filter_path, template_path, rerun=True
+):
+    """
+    Generates a PDF from Markdown text and updates the state in st.session_state.
+
+    Args:
+        md_text (str): The Markdown text to be converted into a PDF.
+        columns_lua_filter_path (str): Path to the Lua filter for columns.
+        inline_lua_filter_path (str): Path to the Lua filter for inline data.
+        template_path (str): Path to the LaTeX template.
+        rerun (bool): Whether to trigger a rerun after generating the PDF (default: True).
+
+    Returns:
+        None: Updates the state in st.session_state and triggers a rerun to display the PDF preview.
+    """
+    try:
+        # Prepare Markdown
+        md_for_pandoc = preprocess_markdown(md_text)
+
+        # Generate PDF using Lua filters
+        lua_filters = [columns_lua_filter_path, inline_lua_filter_path]
+        pdf_bytes = convert_md_to_pdf(md_for_pandoc, template_path, lua_filters)
+
+        # Update session state
+        st.session_state.pdf_generated = True
+        st.session_state.pdf_bytes = pdf_bytes
+
+        # Trigger a rerun to display the PDF preview
+        if rerun:
+            st.rerun()
+    except Exception as e:
+        st.error("Failed to generate PDF")
+        st.code(str(e))
+
+
 # -----------------------------------------------------------------------------
 # Markdown Editor and PDF Preview
 # -----------------------------------------------------------------------------
@@ -61,68 +105,68 @@ editor_col, preview_col = st.columns([1, 1], gap="medium")
 
 # Left column: Markdown editor
 with editor_col:
-    st.subheader("1) Edit CV Markdown")
-    st.caption(
-        "Edit your CV in Markdown. Use headings (#, ##, ###) for structure and '-' for bullet points. "
-        "You can upload an existing file or download your current Markdown anytime."
-    )
-    st.space(size="medium")
+    st.subheader("Markdown Editor")
 
-    # Markdown editor
+    # Text area for Markdown editing
     st.session_state.md_text = st.text_area(
-        "CV Markdown", st.session_state.md_text, height=700, key="cv_editor"
+        "CV Markdown",
+        st.session_state.md_text,
+        height=600,
+        key="cv_editor",
+        label_visibility="collapsed",
     )
 
-    # Buttons row under the editor
-    btn_col1, btn_col2 = st.columns([1, 1])
+    uploaded = st.file_uploader(
+        "Upload cv.md", type=["md", "markdown", "txt"], label_visibility="collapsed"
+    )
 
-    # File uploader
-    with btn_col1:
-        uploaded = st.file_uploader(
-            "Upload cv.md", type=["md", "markdown", "txt"], label_visibility="collapsed"
-        )
+    # File uploader for Markdown files
+    if uploaded is not None:
+        st.session_state.md_text = uploaded.read().decode("utf-8")
+        st.rerun()
 
-        # If user uploads a file, overwrite editor content
-        if uploaded is not None:
-            st.session_state.md_text = uploaded.read().decode("utf-8")
-            st.rerun()
+    # Download button for Markdown
+    st.download_button(
+        label="⬇️ Download Markdown",
+        data=st.session_state.md_text.encode("utf-8"),
+        file_name="cv.md",
+        mime="text/markdown",
+        use_container_width=True,
+    )
 
-    # Download button
-    with btn_col2:
-        st.download_button(
-            label="⬇️ Download Markdown",
-            data=st.session_state.md_text.encode("utf-8"),
-            file_name="cv.md",
-            mime="text/markdown",
-            use_container_width=True,
-        )
-
-# Right column: PDF export
+# Right column: PDF Preview
 with preview_col:
-    st.subheader("2) Export PDF")
+    st.subheader("PDF Preview")
 
-    if st.button("🚀 Generate PDF", type="primary", use_container_width=True):
-        try:
-            md_for_pandoc = preprocess_markdown(st.session_state.md_text)
+    if not st.session_state.pdf_generated:
+        # Generate PDF button
+        if st.button("🚀 Generate PDF", type="primary", use_container_width=True):
+            generate_pdf(
+                st.session_state.md_text,
+                columns_lua_filter_path,
+                inline_lua_filter_path,
+                template_path,
+            )
+    else:
+        # Display PDF preview
+        st.pdf(st.session_state.pdf_bytes, height=600)
 
-            lua_filters = [columns_lua_filter_path, inline_lua_filter_path]
+        st.success("PDF generated successfully.")
 
-            pdf_bytes = convert_md_to_pdf(md_for_pandoc, template_path, lua_filters)
-
-            st.space(size="stretch")
-            st.success("PDF generated successfully.")
-
-            # PDF Preview
-            st.pdf(pdf_bytes, height=800)
-
-            st.download_button(
-                label="⬇️ Download CV PDF",
-                data=pdf_bytes,
-                file_name="cv.pdf",
-                mime="application/pdf",
-                use_container_width=True,
+        # Regenerate PDF button
+        if st.button("🚀 Regenerate PDF", type="primary", use_container_width=True):
+            generate_pdf(
+                st.session_state.md_text,
+                columns_lua_filter_path,
+                inline_lua_filter_path,
+                template_path,
             )
 
-        except Exception as e:
-            st.error("Failed to generate PDF")
-            st.code(str(e))
+        # Download button for PDF
+        st.download_button(
+            label="⬇️ Download CV PDF",
+            data=st.session_state.pdf_bytes,
+            file_name="cv.pdf",
+            mime="application/pdf",
+            use_container_width=True,
+        )
