@@ -2,7 +2,7 @@ import sys
 from pathlib import Path
 
 import streamlit as st
-import streamlit.components.v1 as components
+from streamlit_ace import st_ace
 
 # Add project root to sys.path so we can import from utils without issues
 sys.path.append(str(Path(__file__).resolve().parent.parent))
@@ -13,8 +13,13 @@ from utils.markdown_processor import convert_md_to_pdf, preprocess_markdown
 # Constants and Paths
 # -----------------------------------------------------------------------------
 
+# Define template paths
+TEMPLATE_PATHS = {
+    "Modern": Path("templates/modern.tex"),
+    "Harvard": Path("templates/harvard.tex"),
+}
+
 # Paths to required files
-template_path = Path("templates/modern.tex")
 inline_lua_filter_path = Path("filters/inline_dates.lua")
 columns_lua_filter_path = Path("filters/columns.lua")
 default_cv_path = Path("examples/default.md")
@@ -30,14 +35,12 @@ st.caption(
 )
 st.divider()
 
-
 # -----------------------------------------------------------------------------
 # File Existence Check
 # -----------------------------------------------------------------------------
 
 # Ensure required files exist
 for path, desc in [
-    (template_path, "LaTeX template"),
     (inline_lua_filter_path, "Inline lua filter"),
     (columns_lua_filter_path, "Columns lua filter"),
     (default_cv_path, "Default CV markdown"),
@@ -53,14 +56,48 @@ for path, desc in [
 if "md_text" not in st.session_state:
     st.session_state.md_text = default_cv_path.read_text(encoding="utf-8")
 
+if "template_name" not in st.session_state:
+    st.session_state.template_name = st.session_state.get(
+        "active_template", "Modern"
+    )  # UI state
+
+if "active_template" not in st.session_state:
+    st.session_state.active_template = "Modern"  # app state
+
+if "custom_template_tex" not in st.session_state:
+    st.session_state.custom_template_tex = None
+
+if "custom_lua_filters" not in st.session_state:
+    st.session_state.custom_lua_filters = {
+        "columns": True,
+        "inline_dates": True,
+    }
+
 if "pdf_generated" not in st.session_state:
     st.session_state.pdf_generated = False
     st.session_state.pdf_bytes = None
 
-
 # -----------------------------------------------------------------------------
 # Utility Functions
 # -----------------------------------------------------------------------------
+
+
+def get_template_options():
+    options = list(TEMPLATE_PATHS.keys())
+    if st.session_state.custom_template_tex is not None:
+        options.append("Custom")
+    return options
+
+
+def get_active_template_path():
+    if st.session_state.active_template == "Custom":
+        temp_path = Path("temp_custom_template.tex")
+        temp_path.write_text(st.session_state.custom_template_tex, encoding="utf-8")
+        return temp_path
+    else:
+        return TEMPLATE_PATHS[st.session_state.active_template]
+
+
 def generate_pdf(
     md_text, columns_lua_filter_path, inline_lua_filter_path, template_path, rerun=True
 ):
@@ -95,6 +132,17 @@ def generate_pdf(
     except Exception as e:
         st.error("Failed to generate PDF")
         st.code(str(e))
+
+
+def on_template_change():
+    st.session_state.active_template = st.session_state.template_name
+    generate_pdf(
+        st.session_state.md_text,
+        columns_lua_filter_path,
+        inline_lua_filter_path,
+        get_active_template_path(),
+        rerun=False,
+    )
 
 
 # -----------------------------------------------------------------------------
@@ -145,7 +193,7 @@ with preview_col:
                 st.session_state.md_text,
                 columns_lua_filter_path,
                 inline_lua_filter_path,
-                template_path,
+                get_active_template_path(),
             )
     else:
         # Display PDF preview
@@ -159,7 +207,7 @@ with preview_col:
                 st.session_state.md_text,
                 columns_lua_filter_path,
                 inline_lua_filter_path,
-                template_path,
+                get_active_template_path(),
             )
 
         # Download button for PDF
@@ -170,3 +218,66 @@ with preview_col:
             mime="application/pdf",
             use_container_width=True,
         )
+
+# -----------------------------------------------------------------------------
+# Template & Build Settings
+# -----------------------------------------------------------------------------
+
+st.divider()
+st.subheader("Template & Build Settings")
+
+template_col, settings_col = st.columns([1, 2])
+
+# Template selection
+with template_col:
+    st.selectbox(
+        "Template",
+        options=get_template_options(),
+        key="template_name",  # Bind the selectbox to a session state key
+        on_change=on_template_change,
+    )
+
+# Template editor
+with st.expander("Edit template", expanded=False):
+    template_code = get_active_template_path().read_text(encoding="utf-8")
+
+    if st.session_state.active_template == "Custom":
+        # Editable text area for custom template
+        st.session_state.custom_template_tex = st_ace(
+            value=template_code,
+            language="latex",
+            theme="monokai",
+            height=500,
+            key="custom_template_editor",
+        )
+
+        st.session_state.custom_lua_filters["columns"] = st.checkbox(
+            "columns.lua",
+            value=st.session_state.custom_lua_filters["columns"],
+        )
+
+        st.session_state.custom_lua_filters["inline_dates"] = st.checkbox(
+            "inline_dates.lua",
+            value=st.session_state.custom_lua_filters["inline_dates"],
+        )
+
+        st.download_button(
+            label="⬇️ Download custom LaTeX template",
+            data=st.session_state.custom_template_tex.encode("utf-8"),
+            file_name="custom_template.tex",
+            mime="text/x-tex",
+            use_container_width=True,
+        )
+
+    else:
+        # Read-only template
+        st.code(template_code, language="latex", height=500)
+
+        # Edit as custom template button
+        if st.button("Edit as custom template"):
+            st.session_state.custom_template_tex = template_code
+            st.session_state.active_template = "Custom"
+
+            # reset widget safely on next run
+            st.session_state.pop("template_name", None)
+            st.rerun()
