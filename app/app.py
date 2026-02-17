@@ -281,3 +281,44 @@ with st.expander("Edit template", expanded=False):
             # reset widget safely on next run
             st.session_state.pop("template_name", None)
             st.rerun()
+
+# -----------------------------------------------------------------------------
+# Export Section
+# -----------------------------------------------------------------------------
+
+st.divider()
+st.subheader("Export")
+
+export_col1, export_col2, export_col3 = st.columns(3)
+
+with export_col1:
+    st.download_button(
+        label="⬇️ Download PDF",
+        type="primary",
+        data=st.session_state.pdf_bytes if st.session_state.pdf_generated else b"",
+        file_name="cv.pdf",
+        mime="application/pdf",
+        use_container_width=True,
+        disabled=True if not st.session_state.pdf_generated else False,
+    )
+
+
+with export_col2:
+    st.download_button(
+        label="⬇️ Download TEX",
+        data=st.session_state.pdf_bytes if st.session_state.pdf_generated else b"",
+        file_name="cv.pdf",
+        mime="application/pdf",
+        use_container_width=True,
+        disabled=True if not st.session_state.pdf_generated else False,
+    )
+
+with export_col3:
+    st.download_button(
+        label="⬇️ Download Markdown",
+        data=st.session_state.pdf_bytes if st.session_state.pdf_generated else b"",
+        file_name="cv.pdf",
+        mime="application/pdf",
+        use_container_width=True,
+        disabled=True if not st.session_state.pdf_generated else False,
+    )
