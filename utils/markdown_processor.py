@@ -100,3 +100,38 @@ def convert_md_to_pdf(
             raise RuntimeError(f"Pandoc failed: {e}")
 
         return pdf_path.read_bytes()
+
+
+def convert_md_to_latex(
+    md_text: str,
+    template_path: Path,
+    lua_filter_paths: list[Path] | Path,
+) -> str:
+    """
+    Run Pandoc to convert markdown to LaTeX using the specified template and Lua filters.
+
+    Args:
+        md_text: Input markdown text.
+        template_path: Path to the LaTeX template file.
+        lua_filter_paths: List of paths to Lua filter files or a single path.
+
+    Returns:
+        LaTeX content as a string.
+    """
+    if isinstance(lua_filter_paths, Path):
+        lua_filter_paths = [lua_filter_paths]
+
+    try:
+        latex_content = pypandoc.convert_text(
+            md_text,
+            to="latex",
+            format="md",
+            extra_args=[
+                f"--template={template_path}",
+            ]
+            + [f"--lua-filter={lf}" for lf in lua_filter_paths],
+        )
+    except RuntimeError as e:
+        raise RuntimeError(f"Pandoc failed: {e}")
+
+    return latex_content
