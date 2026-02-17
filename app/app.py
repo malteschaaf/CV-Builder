@@ -283,6 +283,27 @@ with st.expander("Edit template", expanded=False):
             st.rerun()
 
 # -----------------------------------------------------------------------------
+# AI Optimization (Placeholder)
+# -----------------------------------------------------------------------------
+
+st.divider()
+st.subheader("AI CV Optimization (coming soon)")
+
+with st.expander("Use AI to improve your CV", expanded=False):
+    st.markdown(
+        """
+        Upload a job description and let AI:
+
+        - select relevant CV sections
+        - rephrase content for relevance and clarity
+        - **never invent experience**
+        """
+    )
+
+    st.file_uploader("Job description", type=["pdf", "txt", "md"])
+    st.button("Optimize CV", disabled=True)
+
+# -----------------------------------------------------------------------------
 # Export Section
 # -----------------------------------------------------------------------------
 
