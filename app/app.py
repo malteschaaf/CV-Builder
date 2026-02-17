@@ -7,7 +7,11 @@ from streamlit_ace import st_ace
 # Add project root to sys.path so we can import from utils without issues
 sys.path.append(str(Path(__file__).resolve().parent.parent))
 
-from utils.markdown_processor import convert_md_to_pdf, preprocess_markdown
+from utils.markdown_processor import (
+    convert_md_to_latex,
+    convert_md_to_pdf,
+    preprocess_markdown,
+)
 
 # -----------------------------------------------------------------------------
 # Constants and Paths
@@ -20,8 +24,12 @@ TEMPLATE_PATHS = {
 }
 
 # Paths to required files
-inline_lua_filter_path = Path("filters/inline_dates.lua")
-columns_lua_filter_path = Path("filters/columns.lua")
+LUA_FILTER_PATHS = {
+    "columns": Path("filters/columns.lua"),
+    "inline_dates": Path("filters/inline_dates.lua"),
+}
+
+# Path to default CV markdown
 default_cv_path = Path("examples/default.md")
 
 # -----------------------------------------------------------------------------
@@ -41,8 +49,10 @@ st.divider()
 
 # Ensure required files exist
 for path, desc in [
-    (inline_lua_filter_path, "Inline lua filter"),
-    (columns_lua_filter_path, "Columns lua filter"),
+    (TEMPLATE_PATHS["Modern"], "Modern template"),
+    (TEMPLATE_PATHS["Harvard"], "Harvard template"),
+    (LUA_FILTER_PATHS["inline_dates"], "Inline lua filter"),
+    (LUA_FILTER_PATHS["columns"], "Columns lua filter"),
     (default_cv_path, "Default CV markdown"),
 ]:
     if not path.exists():
@@ -67,8 +77,8 @@ if "active_template" not in st.session_state:
 if "custom_template_tex" not in st.session_state:
     st.session_state.custom_template_tex = None
 
-if "custom_lua_filters" not in st.session_state:
-    st.session_state.custom_lua_filters = {
+if "lua_filters" not in st.session_state:
+    st.session_state.lua_filters = {
         "columns": True,
         "inline_dates": True,
     }
@@ -98,14 +108,30 @@ def get_active_template_path():
         return TEMPLATE_PATHS[st.session_state.active_template]
 
 
+def get_active_lua_filters():
+    filters = []
+    if st.session_state.active_template != "Custom":
+        # activate all filters for predefined templates
+        return list(LUA_FILTER_PATHS.values())
+
+    if st.session_state.lua_filters.get("columns", False):
+        filters.append(LUA_FILTER_PATHS["columns"])
+    if st.session_state.lua_filters.get("inline_dates", False):
+        filters.append(LUA_FILTER_PATHS["inline_dates"])
+    return filters
+
+
 def generate_pdf(
-    md_text, columns_lua_filter_path, inline_lua_filter_path, template_path, rerun=True
+    md_text: str,
+    template_path: Path,
+    lua_filter_paths: list[Path] | Path,
+    rerun=True,
 ):
     """
     Generates a PDF from Markdown text and updates the state in st.session_state.
 
     Args:
-        md_text (str): The Markdown text to be converted into a PDF.
+        md_text: The Markdown text to be converted into a PDF.
         columns_lua_filter_path (str): Path to the Lua filter for columns.
         inline_lua_filter_path (str): Path to the Lua filter for inline data.
         template_path (str): Path to the LaTeX template.
@@ -118,9 +144,8 @@ def generate_pdf(
         # Prepare Markdown
         md_for_pandoc = preprocess_markdown(md_text)
 
-        # Generate PDF using Lua filters
-        lua_filters = [columns_lua_filter_path, inline_lua_filter_path]
-        pdf_bytes = convert_md_to_pdf(md_for_pandoc, template_path, lua_filters)
+        # Generate PDF
+        pdf_bytes = convert_md_to_pdf(md_for_pandoc, template_path, lua_filter_paths)
 
         # Update session state
         st.session_state.pdf_generated = True
@@ -138,9 +163,8 @@ def on_template_change():
     st.session_state.active_template = st.session_state.template_name
     generate_pdf(
         st.session_state.md_text,
-        columns_lua_filter_path,
-        inline_lua_filter_path,
         get_active_template_path(),
+        get_active_lua_filters(),
         rerun=False,
     )
 
@@ -191,9 +215,8 @@ with preview_col:
         if st.button("🚀 Generate PDF", type="primary", use_container_width=True):
             generate_pdf(
                 st.session_state.md_text,
-                columns_lua_filter_path,
-                inline_lua_filter_path,
                 get_active_template_path(),
+                get_active_lua_filters(),
             )
     else:
         # Display PDF preview
@@ -205,9 +228,8 @@ with preview_col:
         if st.button("🚀 Regenerate PDF", type="primary", use_container_width=True):
             generate_pdf(
                 st.session_state.md_text,
-                columns_lua_filter_path,
-                inline_lua_filter_path,
                 get_active_template_path(),
+                get_active_lua_filters(),
             )
 
         # Download button for PDF
@@ -251,14 +273,14 @@ with st.expander("Edit template", expanded=False):
             key="custom_template_editor",
         )
 
-        st.session_state.custom_lua_filters["columns"] = st.checkbox(
+        st.session_state.lua_filters["columns"] = st.checkbox(
             "columns.lua",
-            value=st.session_state.custom_lua_filters["columns"],
+            value=st.session_state.lua_filters["columns"],
         )
 
-        st.session_state.custom_lua_filters["inline_dates"] = st.checkbox(
+        st.session_state.lua_filters["inline_dates"] = st.checkbox(
             "inline_dates.lua",
-            value=st.session_state.custom_lua_filters["inline_dates"],
+            value=st.session_state.lua_filters["inline_dates"],
         )
 
         st.download_button(
@@ -326,22 +348,26 @@ with export_col1:
 
 with export_col2:
     st.download_button(
-        label="⬇️ Download TEX",
-        data=st.session_state.pdf_bytes if st.session_state.pdf_generated else b"",
-        file_name="cv.pdf",
-        mime="application/pdf",
+        label="⬇️ Download LaTeX (for Overleaf)",
+        data=convert_md_to_latex(
+            md_text=st.session_state.md_text,
+            template_path=get_active_template_path(),
+            lua_filter_paths=get_active_lua_filters(),
+        ).encode("utf-8"),
+        file_name="cv.tex",
+        mime="text/x-tex",
         use_container_width=True,
-        disabled=True if not st.session_state.pdf_generated else False,
     )
+
 
 with export_col3:
     st.download_button(
         label="⬇️ Download Markdown",
-        data=st.session_state.pdf_bytes if st.session_state.pdf_generated else b"",
-        file_name="cv.pdf",
-        mime="application/pdf",
+        data=st.session_state.md_text.encode("utf-8"),
+        file_name="cv.md",
+        mime="text/markdown",
         use_container_width=True,
-        disabled=True if not st.session_state.pdf_generated else False,
+        key="final_markdown_download",
     )
 
 # -----------------------------------------------------------------------------
