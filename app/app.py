@@ -322,3 +322,64 @@ with export_col3:
         use_container_width=True,
         disabled=True if not st.session_state.pdf_generated else False,
     )
+
+# -----------------------------------------------------------------------------
+# FAQ Section
+# -----------------------------------------------------------------------------
+
+st.divider()
+st.subheader("FAQ")
+
+with st.expander("Why is my PDF not generating?", expanded=False):
+    st.markdown(
+        """
+        Common issues:
+        - Invalid Markdown syntax (check for unclosed tags, etc.)
+        - Missing required files (Lua filters, template)
+        - Pandoc or LaTeX errors (check console for details)
+        """
+    )
+
+with st.expander("How do I customize the template?", expanded=False):
+    st.markdown(
+        """
+        You can upload your own LaTeX template or edit the existing ones. Make sure to follow Pandoc's template syntax.
+        """
+    )
+
+with st.expander("Can I use this for non-CV documents?", expanded=False):
+    st.markdown(
+        """
+        Yes! The tool is designed for CVs but can be used to convert any Markdown document to PDF using your chosen template and filters.
+        """
+    )
+
+with st.expander("How does the AI optimization work?", expanded=False):
+    st.markdown(
+        """
+        The AI optimization will analyze your CV and a provided job description to suggest improvements. It will never add new experience but can help rephrase and reorganize content for better relevance.
+        """
+    )
+
+with st.expander("I found a bug or have a feature request!", expanded=False):
+    st.markdown(
+        """
+        Please open an issue on our GitHub repository with details and screenshots if possible. We appreciate your feedback!
+        """
+    )
+
+with st.expander("How can I contribute?", expanded=False):
+    st.markdown(
+        """
+        Contributions are welcome! Please fork the repository, make your changes, and submit a pull request. Check our contribution guidelines for more details.
+        """
+    )
+
+with st.expander("What are the limitations of this tool?", expanded=False):
+    st.markdown(
+        """
+        - The PDF generation relies on Pandoc and LaTeX, so complex templates may require adjustments.
+        - AI optimization is in early stages and may not always produce perfect results. Always review changes before applying.
+        - The tool is designed for CVs but can be used for other documents with the right template and filters.
+        """
+    )
