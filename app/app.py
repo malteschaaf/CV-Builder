@@ -7,7 +7,11 @@ from streamlit_ace import st_ace
 # Add project root to sys.path so we can import from utils without issues
 sys.path.append(str(Path(__file__).resolve().parent.parent))
 
-from utils.markdown_processor import convert_md_to_pdf, preprocess_markdown
+from utils.markdown_processor import (
+    convert_md_to_latex,
+    convert_md_to_pdf,
+    preprocess_markdown,
+)
 
 # -----------------------------------------------------------------------------
 # Constants and Paths
@@ -344,22 +348,26 @@ with export_col1:
 
 with export_col2:
     st.download_button(
-        label="⬇️ Download TEX",
-        data=st.session_state.pdf_bytes if st.session_state.pdf_generated else b"",
-        file_name="cv.pdf",
-        mime="application/pdf",
+        label="⬇️ Download LaTeX (for Overleaf)",
+        data=convert_md_to_latex(
+            md_text=st.session_state.md_text,
+            template_path=get_active_template_path(),
+            lua_filter_paths=get_active_lua_filters(),
+        ).encode("utf-8"),
+        file_name="cv.tex",
+        mime="text/x-tex",
         use_container_width=True,
-        disabled=True if not st.session_state.pdf_generated else False,
     )
+
 
 with export_col3:
     st.download_button(
         label="⬇️ Download Markdown",
-        data=st.session_state.pdf_bytes if st.session_state.pdf_generated else b"",
-        file_name="cv.pdf",
-        mime="application/pdf",
+        data=st.session_state.md_text.encode("utf-8"),
+        file_name="cv.md",
+        mime="text/markdown",
         use_container_width=True,
-        disabled=True if not st.session_state.pdf_generated else False,
+        key="final_markdown_download",
     )
 
 # -----------------------------------------------------------------------------
